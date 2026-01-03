@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Heart, MessageSquare, Send, ShieldCheck, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Heart, MessageSquare, Send, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../config';
 
@@ -7,34 +7,23 @@ const PostCard = ({ post, currentUser }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   
-  // --- OPTIMISTIC UI STATE ---
-  // Local likes count so it updates instantly
-  const [localLikes, setLocalLikes] = useState(post.likes);
-  // Track if the current user has liked this locally
-  const [isLikedLocally, setIsLikedLocally] = useState(false);
-
-  // Keep local state in sync if the 'post' prop updates from Socket.io
-  useEffect(() => {
-    setLocalLikes(post.likes);
-  }, [post.likes]);
+  // Only track the "Pink" state locally for instant feedback
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleLike = async () => {
-    // 1. Instant UI Change (Optimistic)
-    const alreadyLiked = isLikedLocally;
-    setIsLikedLocally(!alreadyLiked);
-    setLocalLikes(prev => alreadyLiked ? prev - 1 : prev + 1);
-
+    if (isProcessing) return; // Prevent double-clicks while processing
+    
+    setIsProcessing(true);
     try {
-      // 2. Background Server Sync
       await axios.patch(`${API_URL}/api/posts/${post._id}/like`, {
         userId: currentUser.id 
       });
+      // We don't manually change numbers here. 
+      // The Socket.io listener in App.js will update post.likes automatically!
     } catch (err) { 
       console.error("Like error");
-      // 3. Rollback if server fails
-      setIsLikedLocally(alreadyLiked);
-      setLocalLikes(post.likes);
-      alert("Transmission failed. Re-syncing...");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -76,13 +65,16 @@ const PostCard = ({ post, currentUser }) => {
         <p className="text-slate-300 mb-6">{post.content}</p>
 
         <div className="flex items-center gap-6 border-t border-slate-800/50 pt-4">
-          <button onClick={handleLike} className="flex items-center gap-2 group/btn">
-            {/* Heart is pink if either locally liked or has existing likes */}
+          <button 
+            onClick={handleLike} 
+            disabled={isProcessing}
+            className={`flex items-center gap-2 transition-transform active:scale-90 ${isProcessing ? 'opacity-70' : ''}`}
+          >
             <Heart 
               size={20} 
-              className={isLikedLocally || localLikes > 0 ? "fill-pink-500 text-pink-500" : "text-slate-500"} 
+              className={post.likes > 0 ? "fill-pink-500 text-pink-500" : "text-slate-500"} 
             />
-            <span className="text-xs font-bold text-slate-500">{localLikes}</span>
+            <span className="text-xs font-bold text-slate-500">{post.likes}</span>
           </button>
           
           <button onClick={() => setShowComments(!showComments)} className="flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-colors">
@@ -93,9 +85,8 @@ const PostCard = ({ post, currentUser }) => {
         </div>
       </div>
 
-      {/* DROPDOWN COMMENTS SECTION */}
       {showComments && (
-        <div className="bg-slate-950/50 border-t border-slate-800/50 p-4 animate-in slide-in-from-top duration-200">
+        <div className="bg-slate-950/50 border-t border-slate-800/50 p-4 animate-in slide-in-from-top">
           <div className="space-y-4 max-h-60 overflow-y-auto mb-4 pr-2 custom-scrollbar">
             {post.comments?.map((c, i) => (
               <div key={i} className="bg-slate-900/50 p-3 rounded-2xl border border-slate-800/30">
@@ -115,7 +106,7 @@ const PostCard = ({ post, currentUser }) => {
               placeholder="Add a transmission..."
               className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-cyan-500/50 transition-all text-white"
             />
-            <button className="bg-cyan-600 p-2 rounded-xl text-white hover:bg-cyan-500 transition-colors">
+            <button type="submit" className="bg-cyan-600 p-2 rounded-xl text-white hover:bg-cyan-500 transition-colors">
               <Send size={14} />
             </button>
           </form>
