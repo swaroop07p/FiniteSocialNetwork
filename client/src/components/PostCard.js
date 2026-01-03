@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Heart, MessageSquare, Send, ShieldCheck, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import axios from 'axios';
 import { API_URL } from '../config';
@@ -6,13 +6,36 @@ import { API_URL } from '../config';
 const PostCard = ({ post, currentUser }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
+  
+  // --- OPTIMISTIC UI STATE ---
+  // Local likes count so it updates instantly
+  const [localLikes, setLocalLikes] = useState(post.likes);
+  // Track if the current user has liked this locally
+  const [isLikedLocally, setIsLikedLocally] = useState(false);
+
+  // Keep local state in sync if the 'post' prop updates from Socket.io
+  useEffect(() => {
+    setLocalLikes(post.likes);
+  }, [post.likes]);
 
   const handleLike = async () => {
+    // 1. Instant UI Change (Optimistic)
+    const alreadyLiked = isLikedLocally;
+    setIsLikedLocally(!alreadyLiked);
+    setLocalLikes(prev => alreadyLiked ? prev - 1 : prev + 1);
+
     try {
+      // 2. Background Server Sync
       await axios.patch(`${API_URL}/api/posts/${post._id}/like`, {
         userId: currentUser.id 
       });
-    } catch (err) { console.error("Like error"); }
+    } catch (err) { 
+      console.error("Like error");
+      // 3. Rollback if server fails
+      setIsLikedLocally(alreadyLiked);
+      setLocalLikes(post.likes);
+      alert("Transmission failed. Re-syncing...");
+    }
   };
 
   const handleComment = async (e) => {
@@ -33,7 +56,7 @@ const PostCard = ({ post, currentUser }) => {
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-cyan-500 font-bold uppercase text-xs">
-              {post.author[0]}
+              {post.author ? post.author[0] : "?"}
             </div>
             <div>
               <h4 className="font-bold text-slate-200 text-sm">{post.author}</h4>
@@ -41,7 +64,10 @@ const PostCard = ({ post, currentUser }) => {
             </div>
           </div>
           {currentUser.role === 'admin' && (
-            <button onClick={() => axios.delete(`${API_URL}/api/posts/${post._id}`)} className="text-slate-600 hover:text-red-500 transition-colors">
+            <button 
+              onClick={() => axios.delete(`${API_URL}/api/posts/${post._id}`)} 
+              className="text-slate-600 hover:text-red-500 transition-colors"
+            >
               <Trash2 size={16} />
             </button>
           )}
@@ -51,8 +77,12 @@ const PostCard = ({ post, currentUser }) => {
 
         <div className="flex items-center gap-6 border-t border-slate-800/50 pt-4">
           <button onClick={handleLike} className="flex items-center gap-2 group/btn">
-            <Heart size={20} className={post.likes > 0 ? "fill-pink-500 text-pink-500" : "text-slate-500"} />
-            <span className="text-xs font-bold text-slate-500">{post.likes}</span>
+            {/* Heart is pink if either locally liked or has existing likes */}
+            <Heart 
+              size={20} 
+              className={isLikedLocally || localLikes > 0 ? "fill-pink-500 text-pink-500" : "text-slate-500"} 
+            />
+            <span className="text-xs font-bold text-slate-500">{localLikes}</span>
           </button>
           
           <button onClick={() => setShowComments(!showComments)} className="flex items-center gap-2 text-slate-500 hover:text-cyan-400 transition-colors">
