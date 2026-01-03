@@ -4,32 +4,15 @@ import axios from 'axios';
 import { API_URL } from '../config';
 
 const PostCard = ({ post, currentUser }) => {
-  const [localLikes, setLocalLikes] = React.useState(post.likes);
-  const [isLiked, setIsLiked] = React.useState(false); // Track if WE liked it locally
-
-  // 2. Keep local likes in sync if someone else likes it
-  React.useEffect(() => {
-    setLocalLikes(post.likes);
-  }, [post.likes]);
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
 
   const handleLike = async () => {
-    // --- OPTIMISTIC UI START ---
-    // If already liked, decrement. If not, increment.
-    const change = isLiked ? -1 : 1;
-    setLocalLikes(prev => prev + change);
-    setIsLiked(!isLiked);
-    // --- OPTIMISTIC UI END ---
-
     try {
       await axios.patch(`${API_URL}/api/posts/${post._id}/like`, {
         userId: currentUser.id 
       });
-    } catch (err) {
-      // Rollback if server fails
-      setLocalLikes(post.likes);
-      setIsLiked(isLiked);
-      alert("Network lag: Could not sync like.");
-    }
+    } catch (err) { console.error("Like error"); }
   };
 
   const handleComment = async (e) => {
