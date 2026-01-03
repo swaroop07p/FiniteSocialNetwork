@@ -11,7 +11,7 @@ const PostForm = ({ currentUser }) => {
     if (!content) return;
 
     try {
-      await axios.post('${API_URL}/api/posts', { 
+      await axios.post(`${API_URL}/api/posts`, { 
         content, 
         author: currentUser.username // Send the string name to backend
       });
