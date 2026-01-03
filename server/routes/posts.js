@@ -39,8 +39,13 @@ router.post('/', async (req, res) => {
 
 // 2. GET ALL POSTS
 router.get('/', async (req, res) => {
-  const posts = await Post.find().sort({ createdAt: -1 });
-  res.json(posts);
+  try {
+    const posts = await Post.find().sort({ createdAt: -1 });
+    // Force return an empty array if nothing is found
+    res.json(posts || []); 
+  } catch (err) {
+    res.status(500).json([]); // Send empty array even on error to prevent crash
+  }
 });
 
 // 3. SECURE LIKE (One User One Like System)

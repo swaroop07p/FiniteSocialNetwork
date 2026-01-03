@@ -84,7 +84,11 @@ function App() {
           </div>
 
           <div className="grid gap-6">
-            {posts.map(post => <PostCard key={post._id} post={post} currentUser={user} />)}
+            {Array.isArray(posts) ? (
+              posts.map(post => <PostCard key={post._id} post={post} currentUser={user} />)
+            ) : (
+              <p className="text-center text-slate-500">Initializing connection...</p>
+            )}
           </div>
         </section>
       </div>
