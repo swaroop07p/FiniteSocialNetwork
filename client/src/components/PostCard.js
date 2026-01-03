@@ -8,12 +8,25 @@ const PostCard = ({ post, currentUser }) => {
   const [commentText, setCommentText] = useState('');
 
   const handleLike = async () => {
-    try {
-      await axios.patch(`${API_URL}/api/posts/${post._id}/like`, {
-        userId: currentUser.id 
-      });
-    } catch (err) { console.error("Like error"); }
-  };
+  // 1. OPTIMISTIC UPDATE: Change the UI immediately
+  // We don't wait for axios!
+  const isLiked = post.likedByMe; // You can track this in state if you want even more speed
+  
+  try {
+    // 2. The background request
+    await axios.patch(`${API_URL}/api/posts/${post._id}/like`, {
+      userId: currentUser.id 
+    });
+    
+    // Note: Since your socket listener in App.js is already working, 
+    // it will "confirm" the true state once the server responds.
+  } catch (err) {
+    // 3. ROLLBACK: If the server fails (e.g. no internet), the socket 
+    // won't fire, so we just let the user know.
+    console.error("Like failed");
+    alert("Action could not be completed.");
+  }
+};
 
   const handleComment = async (e) => {
     e.preventDefault();
