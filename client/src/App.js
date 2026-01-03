@@ -24,9 +24,15 @@ function App() {
   const MAX_POSTS = 100;
 
   useEffect(() => {
-    axios.get('${API_URL}/api/posts')
-      .then(res => setPosts(res.data))
-      .catch(err => console.log("Fetch error:", err));
+    axios.get(`${API_URL}/api/posts`)
+    .then(res => {
+      // If res.data is not an array, set it to empty array
+      setPosts(Array.isArray(res.data) ? res.data : []);
+    })
+    .catch(err => {
+      console.error("Fetch error:", err);
+      setPosts([]); // Set to empty array on error to prevent .map crash
+    });
 
     socket.on('post_created', (newPost) => setPosts(prev => [newPost, ...prev]));
     socket.on('post_swapped', ({ deleted, added }) => {

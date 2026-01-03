@@ -10,27 +10,30 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth');
 const postRoutes = require('./routes/posts');
 
-// Import the background cleanup task
 const initCron = require('./utils/cron');
 
 const app = express();
 
 // 2. Create HTTP Server for Socket.io to sit on top of
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { 
-    origin: "https://finite-social-network.vercel.app", // Allows your frontend to connect from any URL
-    methods: ["GET", "POST"]
-  }
-});
 
+const allowedOrigin = "https://finite-social-network.vercel.app";
 // 3. Middleware
 // app.use(cors());
 app.use(cors({
-  origin: "https://finite-social-network.vercel.app", // Your Vercel URL
-  methods: ["GET", "POST", "PATCH", "DELETE"],
-  credentials: true
+  origin: allowedOrigin,
+  credentials: true,
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"]
 }));
+
+const io = require('socket.io')(server, {
+  cors: {
+    origin: allowedOrigin,
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ['websocket', 'polling'] // Allow both for better compatibility
+});
 
 app.use(express.json());
 
