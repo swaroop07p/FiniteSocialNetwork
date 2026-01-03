@@ -19,7 +19,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { 
-    origin: "*", // Allows your frontend to connect from any URL
+    origin: "https://finite-social-network.vercel.app", // Allows your frontend to connect from any URL
     methods: ["GET", "POST"]
   }
 });
@@ -27,7 +27,7 @@ const io = new Server(server, {
 // 3. Middleware
 // app.use(cors());
 app.use(cors({
-  origin: "https://finite-social-network.vercel.app/", // Your Vercel URL
+  origin: "https://finite-social-network.vercel.app", // Your Vercel URL
   methods: ["GET", "POST", "PATCH", "DELETE"],
   credentials: true
 }));

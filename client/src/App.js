@@ -7,7 +7,7 @@ import SpaceVisual from './components/SpaceVisual';
 import Login from './components/Login';
 import { API_URL } from './config';
 
-const socket = io('${API_URL}');
+const socket = io(API_URL);
 
 function App() {
   const [posts, setPosts] = useState([]);
