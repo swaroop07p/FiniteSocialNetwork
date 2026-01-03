@@ -84,12 +84,19 @@ function App() {
           </div>
 
           <div className="grid gap-6">
-            {Array.isArray(posts) ? (
-              posts.map(post => <PostCard key={post._id} post={post} currentUser={user} />)
-            ) : (
-              <p className="text-center text-slate-500">Initializing connection...</p>
-            )}
-          </div>
+  {/* Check if posts exists AND is an array before mapping */}
+  {Array.isArray(posts) && posts.length > 0 ? (
+    posts.map(post => (
+      <PostCard key={post._id} post={post} currentUser={user} />
+    ))
+  ) : (
+    <div className="text-center py-20 opacity-50">
+      <p className="animate-pulse text-cyan-400 font-mono text-xs uppercase tracking-widest">
+        {Array.isArray(posts) ? "Waiting for transmissions..." : "Initializing connection..."}
+      </p>
+    </div>
+  )}
+</div>
         </section>
       </div>
     </div>
