@@ -20,16 +20,18 @@ const handleDelete = async () => {
     }
   }
 };
-  const handleLike = async () => {
-    try {
-      // Pass the user ID so the backend can prevent double-liking
-      await axios.patch(`http://localhost:5000/api/posts/${post._id}/like`, {
-        userId: currentUser.id
-      });
-    } catch (err) {
-      alert(err.response?.data?.msg || "Already Liked");
-    }
-  };
+const handleLike = async () => {
+  try {
+    // IMPORTANT: currentUser.id comes from your Login/App.js state
+    await axios.patch(`http://localhost:5000/api/posts/${post._id}/like`, {
+      userId: currentUser.id 
+    });
+    // Visual update happens via Socket.io automatically
+  } catch (err) {
+    // This catches the "Post already liked" error from backend
+    alert(err.response?.data?.msg || "Like failed");
+  }
+};
 
   return (
     <div className="group bg-slate-900/40 border border-slate-800/50 p-6 rounded-3xl hover:bg-slate-900/80 transition-all">

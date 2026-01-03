@@ -35,8 +35,7 @@ function App() {
     // 2. Add the new post if it was sent in the same event
     return added ? [added, ...filtered] : filtered;
   });
-});
-    socket.on('post_liked', (updatedPost) => {
+  socket.on('post_liked', (updatedPost) => {
       setPosts(prev => prev.map(p => p._id === updatedPost._id ? updatedPost : p));
     });
     socket.on('post_deleted', (id) => {
@@ -50,6 +49,8 @@ function App() {
       socket.off('post_deleted');
     };
   }, []);
+});
+    
 
   if (!user) return <Login onLogin={setUser} />;
 

@@ -80,21 +80,36 @@ router.patch('/:id/like', async (req, res) => {
 });
 
 router.patch('/:id/like', async (req, res) => {
+  const { userId } = req.body;
+
   try {
-    const { userId } = req.body; // Pass userId from frontend
     const user = await User.findById(userId);
-    
+    if (!user) return res.status(404).json({ msg: "User not found" });
+
+    // 1. One user one like check
     if (user.likedPosts.includes(req.params.id)) {
-      return res.status(400).json({ msg: "Already liked this post" });
+      return res.status(400).json({ msg: "Post already liked" });
     }
 
-    const post = await Post.findByIdAndUpdate(req.params.id, { $inc: { likes: 1 } }, { new: true });
+    const post = await Post.findByIdAndUpdate(
+      req.params.id,
+      { $inc: { likes: 1 } },
+      { new: true }
+    );
+
+    // 2. Add to user's liked list and save
     user.likedPosts.push(req.params.id);
     await user.save();
 
-    req.io.emit('post_liked', post);
-    res.json({ post, likedPosts: user.likedPosts });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+    // 3. BROADCAST: This sends the update to everyone instantly
+    if (req.io) {
+      req.io.emit('post_liked', post);
+    }
+
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ADMIN DELETE ROUTE
