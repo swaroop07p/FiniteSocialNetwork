@@ -27,7 +27,7 @@ const io = new Server(server, {
 // 3. Middleware
 // app.use(cors());
 app.use(cors({
-  origin: "https://finite-social.vercel.app", // Your Vercel URL
+  origin: "https://finite-social-network.vercel.app/", // Your Vercel URL
   methods: ["GET", "POST", "PATCH", "DELETE"],
   credentials: true
 }));
