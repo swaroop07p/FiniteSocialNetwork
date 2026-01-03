@@ -46,33 +46,44 @@ router.get('/', async (req, res) => {
 // 3. SECURE LIKE (One User One Like System)
 router.patch('/:id/like', async (req, res) => {
   const { userId } = req.body;
-
   try {
-    // Check if user exists
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ msg: "User identity not found" });
+    const post = await Post.findById(req.params.id);
+    
+    const isLiked = user.likedPosts.includes(req.params.id);
 
-    // THE SHIELD: Check if user already liked this specific post
-    if (user.likedPosts.includes(req.params.id)) {
-      return res.status(400).json({ msg: "You have already shielded this content!" });
+    if (isLiked) {
+      // UNLIKE: Remove from user list and decrement post
+      user.likedPosts = user.likedPosts.filter(id => id.toString() !== req.params.id);
+      post.likes = Math.max(0, post.likes - 1);
+    } else {
+      // LIKE: Add to user list and increment post
+      user.likedPosts.push(req.params.id);
+      post.likes += 1;
     }
 
-    // Update the Post likes
-    const post = await Post.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { likes: 1 } },
-      { new: true }
-    );
-
-    // Save the post ID to the user's likedPosts array
-    user.likedPosts.push(req.params.id);
     await user.save();
+    await post.save();
 
-    // Notify everyone in real-time
-    if (req.io) {
-      req.io.emit('post_liked', post);
-    }
+    if (req.io) req.io.emit('post_liked', post);
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+// 2. ADD COMMENT
+router.post('/:id/comment', async (req, res) => {
+  const { text, username } = req.body;
+  try {
+    const post = await Post.findById(req.params.id);
+    const newComment = { text, username, createdAt: new Date() };
+    
+    post.comments.push(newComment);
+    await post.save();
+
+    // Broadcast the updated post with new comments to everyone
+    if (req.io) req.io.emit('post_liked', post); 
     res.json(post);
   } catch (err) {
     res.status(500).json({ error: err.message });

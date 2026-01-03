@@ -59,7 +59,7 @@ function App() {
       <div className="max-w-2xl mx-auto px-4 py-12">
         <header className="text-center mb-12">
           <div className="flex justify-between items-center mb-8">
-             <span className="text-xs text-slate-500 font-mono tracking-tighter">NODE_ID: {socket.id || 'connecting...'}</span>
+             <span className="text-xs text-slate-500 font-mono tracking-tighter">USER_ID: {socket.id || 'connecting...'}</span>
              <button 
                 onClick={() => { localStorage.removeItem('finite_user'); window.location.reload(); }}
                 className="text-xs text-red-500 font-bold hover:bg-red-500/10 px-3 py-1 rounded-full border border-red-500/20 transition-all"
