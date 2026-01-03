@@ -3,35 +3,29 @@ import { Heart, ShieldCheck, Trash2 } from 'lucide-react';
 import axios from 'axios';
 
 const PostCard = ({ post, currentUser }) => {
-  console.log("Current User Role:", currentUser?.role);
 
-  console.log("Current User Role:", currentUser?.role);
-  // client/src/components/PostCard.js
-
-const handleDelete = async () => {
-  if (window.confirm("Purge this content?")) {
-    try {
-      await axios.delete(`http://localhost:5000/api/posts/${post._id}`);
-      // No need to do anything here if your Socket.io listener in App.js 
-      // is working, but adding a local alert helps for debugging.
-    } catch (err) {
-      console.error("Delete failed:", err);
-      alert("System error during purge.");
+  const handleDelete = async () => {
+    if (window.confirm("Purge this content?")) {
+      try {
+        await axios.delete(`http://localhost:5000/api/posts/${post._id}`);
+      } catch (err) {
+        console.error("Delete failed:", err);
+        alert("System error during purge.");
+      }
     }
-  }
-};
-const handleLike = async () => {
-  try {
-    // IMPORTANT: currentUser.id comes from your Login/App.js state
-    await axios.patch(`http://localhost:5000/api/posts/${post._id}/like`, {
-      userId: currentUser.id 
-    });
-    // Visual update happens via Socket.io automatically
-  } catch (err) {
-    // This catches the "Post already liked" error from backend
-    alert(err.response?.data?.msg || "Like failed");
-  }
-};
+  };
+
+  const handleLike = async () => {
+    try {
+      // Send the userId to the backend for verification
+      await axios.patch(`http://localhost:5000/api/posts/${post._id}/like`, {
+        userId: currentUser.id 
+      });
+    } catch (err) {
+      // This will now catch the "Already shielded" message!
+      alert(err.response?.data?.msg || "Like failed");
+    }
+  };
 
   return (
     <div className="group bg-slate-900/40 border border-slate-800/50 p-6 rounded-3xl hover:bg-slate-900/80 transition-all">
@@ -47,7 +41,6 @@ const handleLike = async () => {
         </div>
         
         <div className="flex items-center gap-2">
-          {/* FIX: Use currentUser.role directly from props */}
           {currentUser && currentUser.role === 'admin' && (
             <button 
               onClick={handleDelete} 

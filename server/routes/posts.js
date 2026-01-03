@@ -3,28 +3,18 @@ const router = express.Router();
 const Post = require('../models/Post');
 const User = require('../models/User');
 
-// POST a new message (The Battle Logic)
-// server/routes/posts.js
-
-// server/routes/posts.js
-
+// 1. BROADCAST NEW MESSAGE (The Battle Logic)
 router.post('/', async (req, res) => {
   const { content, author } = req.body;
-  const MAX_LIMIT = 100; // As per PS requirement
+  const MAX_LIMIT = 100;
 
   try {
     const count = await Post.countDocuments();
 
-    // Only attempt swap if we are at or above the limit
     if (count >= MAX_LIMIT) {
-      // Find the "weakest" post (innovation: lowest likes)
       const weakest = await Post.findOne().sort({ likes: 1, createdAt: 1 });
-      
-      // Safety check: Only delete if a post was actually found
       if (weakest) {
         await Post.findByIdAndDelete(weakest._id);
-        
-        // Notify all clients that space was cleared
         if (req.io) {
           req.io.emit('post_swapped', { 
             deletedId: weakest._id,
@@ -34,74 +24,51 @@ router.post('/', async (req, res) => {
       }
     }
 
-    // Create the new post
-    const newPost = new Post({ 
-      content, 
-      author, 
-      likes: 0 
-    });
-    
+    const newPost = new Post({ content, author, likes: 0 });
     await newPost.save();
 
-    // Real-time update for the frontend "Battle"
     if (req.io) {
       req.io.emit('post_created', newPost);
     }
 
     res.status(201).json(newPost);
   } catch (err) {
-    console.error("SERVER CRASH DETAILS:", err); // Look at your terminal for this!
     res.status(500).json({ error: "Backend logic failed during broadcast." });
   }
 });
 
-// GET all posts
+// 2. GET ALL POSTS
 router.get('/', async (req, res) => {
   const posts = await Post.find().sort({ createdAt: -1 });
   res.json(posts);
 });
 
-// LIKE a post
-router.patch('/:id/like', async (req, res) => {
-  try {
-    const post = await Post.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { likes: 1 } }, // Increment likes by 1
-      { new: true }
-    );
-    
-    // Notify everyone in real-time that a post got a like!
-    req.io.emit('post_liked', post);
-    
-    res.json(post);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
+// 3. SECURE LIKE (One User One Like System)
 router.patch('/:id/like', async (req, res) => {
   const { userId } = req.body;
 
   try {
+    // Check if user exists
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ msg: "User not found" });
+    if (!user) return res.status(404).json({ msg: "User identity not found" });
 
-    // 1. One user one like check
+    // THE SHIELD: Check if user already liked this specific post
     if (user.likedPosts.includes(req.params.id)) {
-      return res.status(400).json({ msg: "Post already liked" });
+      return res.status(400).json({ msg: "You have already shielded this content!" });
     }
 
+    // Update the Post likes
     const post = await Post.findByIdAndUpdate(
       req.params.id,
       { $inc: { likes: 1 } },
       { new: true }
     );
 
-    // 2. Add to user's liked list and save
+    // Save the post ID to the user's likedPosts array
     user.likedPosts.push(req.params.id);
     await user.save();
 
-    // 3. BROADCAST: This sends the update to everyone instantly
+    // Notify everyone in real-time
     if (req.io) {
       req.io.emit('post_liked', post);
     }
@@ -112,25 +79,18 @@ router.patch('/:id/like', async (req, res) => {
   }
 });
 
-// ADMIN DELETE ROUTE
-// server/routes/posts.js
-
+// 4. ADMIN DELETE ROUTE
 router.delete('/:id', async (req, res) => {
   try {
     const deletedPost = await Post.findByIdAndDelete(req.params.id);
-    
-    if (!deletedPost) {
-      return res.status(404).json({ msg: "Post already gone" });
-    }
+    if (!deletedPost) return res.status(404).json({ msg: "Post already gone" });
 
-    // Check if io exists before emitting to prevent 500 error
     if (req.io) {
       req.io.emit('post_deleted', req.params.id);
     }
 
-    res.json({ msg: "Content successfully purged from finite space" });
+    res.json({ msg: "Content successfully purged" });
   } catch (err) {
-    console.error("Delete Error:", err);
     res.status(500).json({ error: "Server failed to process deletion" });
   }
 });
