@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Heart, MessageSquare, Send, ShieldCheck, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const PostCard = ({ post, currentUser }) => {
   const [showComments, setShowComments] = useState(false);
@@ -8,7 +9,7 @@ const PostCard = ({ post, currentUser }) => {
 
   const handleLike = async () => {
     try {
-      await axios.patch(`http://localhost:5000/api/posts/${post._id}/like`, {
+      await axios.patch(`${API_URL}/api/posts/${post._id}/like`, {
         userId: currentUser.id 
       });
     } catch (err) { console.error("Like error"); }
@@ -18,7 +19,7 @@ const PostCard = ({ post, currentUser }) => {
     e.preventDefault();
     if (!commentText.trim()) return;
     try {
-      await axios.post(`http://localhost:5000/api/posts/${post._id}/comment`, {
+      await axios.post(`${API_URL}/api/posts/${post._id}/comment`, {
         text: commentText,
         username: currentUser.username
       });
@@ -40,7 +41,7 @@ const PostCard = ({ post, currentUser }) => {
             </div>
           </div>
           {currentUser.role === 'admin' && (
-            <button onClick={() => axios.delete(`http://localhost:5000/api/posts/${post._id}`)} className="text-slate-600 hover:text-red-500 transition-colors">
+            <button onClick={() => axios.delete(`${API_URL}/api/posts/${post._id}`)} className="text-slate-600 hover:text-red-500 transition-colors">
               <Trash2 size={16} />
             </button>
           )}

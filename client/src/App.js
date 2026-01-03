@@ -5,8 +5,9 @@ import PostForm from './components/PostForm';
 import PostCard from './components/PostCard';
 import SpaceVisual from './components/SpaceVisual';
 import Login from './components/Login';
+import { API_URL } from './config';
 
-const socket = io('http://localhost:5000');
+const socket = io('${API_URL}');
 
 function App() {
   const [posts, setPosts] = useState([]);
@@ -23,7 +24,7 @@ function App() {
   const MAX_POSTS = 100;
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/posts')
+    axios.get('${API_URL}/api/posts')
       .then(res => setPosts(res.data))
       .catch(err => console.log("Fetch error:", err));
 

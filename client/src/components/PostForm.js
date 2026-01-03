@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Send } from 'lucide-react';
+import { API_URL } from '../config';
 
 const PostForm = ({ currentUser }) => {
   const [content, setContent] = useState('');
@@ -10,7 +11,7 @@ const PostForm = ({ currentUser }) => {
     if (!content) return;
 
     try {
-      await axios.post('http://localhost:5000/api/posts', { 
+      await axios.post('${API_URL}/api/posts', { 
         content, 
         author: currentUser.username // Send the string name to backend
       });

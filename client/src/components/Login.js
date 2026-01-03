@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { Shield, UserPlus, LogIn } from 'lucide-react';
+import { API_URL } from '../config';
 
 const Login = ({ onLogin }) => {
   const [isNewUser, setIsNewUser] = useState(false);
@@ -15,7 +16,7 @@ const Login = ({ onLogin }) => {
     const endpoint = isNewUser ? '/api/auth/register' : '/api/auth/login';
     
     try {
-      const res = await axios.post(`http://localhost:5000${endpoint}`, { username, password });
+      const res = await axios.post(`${API_URL}${endpoint}`, { username, password });
       
       // Store token and user data
       localStorage.setItem('token', res.data.token);
