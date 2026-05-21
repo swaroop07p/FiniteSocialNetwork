@@ -109,7 +109,6 @@ function App() {
   );
 }
 
-// Hello this is some test
 
 
 export default App;
